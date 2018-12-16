@@ -1,6 +1,11 @@
 package locale
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -8,14 +13,18 @@ import (
 // Parse :
 type Parse interface {
 	Lookup(string) string
+	Locale(string) interface{}
 }
 
-// Locale :
+// Locale : 言語環境管理構造体
 type Locale struct {
-	Default string                      // デフォルト言語
-	Langs   map[string][]string         // ["en"][]string{"en", "en-US", ...}
-	Ext     map[string]string           //
-	match   map[string][]*regexp.Regexp //
+	Default   string                                 // デフォルト言語
+	Langs     map[string][]string                    // ["en"][]string{"en", "en-US", ...}
+	Ext       map[string]string                      //
+	match     map[string][]*regexp.Regexp            //
+	LocaleDir string                                 // 言語ファイル置き場
+	locales   map[string]interface{}                 // 言語ファイル群
+	Walk      func(string, os.FileInfo, error) error // 言語設定ファイル解析関数ポインタ
 }
 
 // Lookup : Accept-Language のデータを解析し、言語判定を行う
@@ -54,6 +63,65 @@ func (locale *Locale) Lookup(language string) string {
 	return locale.Default
 }
 
+// Locale : 設定済みの言語設定情報を取得する
+func (locale *Locale) Locale(name string) interface{} {
+	if v, ok := locale.locales[name]; ok {
+		return v
+	}
+	return nil
+}
+
+func (locale *Locale) setLocale() error {
+	// 設定項目が未設定の場合は何もせず復帰する
+	if locale.LocaleDir == "" {
+		return nil
+	}
+	// 言語設定情報を格納するマップを初期化する
+	locale.locales = make(map[string]interface{})
+	if locale.Walk == nil {
+		locale.Walk = locale.DefaultWalk
+	}
+
+	return filepath.Walk(locale.LocaleDir, locale.Walk)
+}
+
+// DefaultWalk : 言語設定ファイル群を読み込みデータに保持する関数
+func (locale *Locale) DefaultWalk(path string, f os.FileInfo, err error) error {
+	if err != nil {
+		return err
+	}
+	if f.IsDir() {
+		return nil
+	}
+
+	// JSON ファイルか否かをチェックする
+	idx := strings.LastIndex(path, ".")
+	if idx == -1 {
+		return nil
+	}
+	if path[idx:] != ".json" {
+		return nil
+	}
+
+	// フルパスを整形する ex) /path/to/conf.ja.json => conf.ja
+	var name = path
+	if len(locale.LocaleDir)+1 < len(path[:idx]) {
+		name = path[len(locale.LocaleDir)+1 : idx]
+	}
+
+	// 言語設定ファイルからデータを抽出する
+	var data = make(map[string]interface{})
+	buf, _ := ioutil.ReadFile(path)
+	if len(buf) == 0 {
+		buf = []byte("{}")
+	}
+	if err := json.Unmarshal(buf, &data); err != nil {
+		return fmt.Errorf("%s: %v", name, err)
+	}
+	locale.locales[name] = data
+	return nil
+}
+
 // CreateLocale : 言語判定を行うために必要な情報を構築する
 func (locale *Locale) CreateLocale() (Parse, error) {
 	if locale.match != nil {
@@ -79,6 +147,10 @@ func (locale *Locale) CreateLocale() (Parse, error) {
 			// ex) map["ja"][]{"^ja$"}
 			// ex) map["en"][]{"^en$", "^en\-US$", "^en\-.*"}
 		}
+	}
+	// 言語設定ファイルをデータとして保持する
+	if err := locale.setLocale(); err != nil {
+		return nil, err
 	}
 
 	return locale, nil

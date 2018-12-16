@@ -72,6 +72,7 @@ func Test__NEW_CREATE_LOOKUP_NOEXT(t *testing.T) {
 			"en": []string{"en", "en-*"},
 			"zh": []string{"zh"},
 		},
+		LocaleDir: "config/locales",
 	}
 
 	parse, err := locale.CreateLocale()
@@ -113,4 +114,67 @@ func Test__NEW_CREATE_ERROR(t *testing.T) {
 		t.Fatal("CreateLocale Error")
 	}
 	fmt.Println(err)
+}
+
+func Test__NEW_CREATE_LOCALE_CONF(t *testing.T) {
+	var locale = &Locale{
+		Default: "ja",
+		Langs: map[string][]string{
+			"ja": []string{"ja"},
+			"en": []string{"en", "en-*"},
+			"zh": []string{"zh"},
+		},
+		LocaleDir: "config/locales",
+	}
+
+	parse, err := locale.CreateLocale()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if parse.Locale("ja") == nil {
+		t.Fatal("Error")
+	}
+
+	if parse.Locale("hello/world/ja") == nil {
+		t.Fatal("Error")
+	}
+
+	if parse.Locale("hello/world.ja") != nil {
+		t.Fatal("Error")
+	}
+}
+
+func Test__NEW_CREATE_LOCALE_ERROR1(t *testing.T) {
+	var locale = &Locale{
+		Default: "ja",
+		Langs: map[string][]string{
+			"ja": []string{"ja"},
+			"en": []string{"en", "en-*"},
+			"zh": []string{"zh"},
+		},
+		LocaleDir: "config/abort2",
+	}
+
+	_, err := locale.CreateLocale()
+	if err == nil {
+		t.Fatal(err)
+	}
+}
+
+func Test__NEW_CREATE_LOCALE_ERROR2(t *testing.T) {
+	var locale = &Locale{
+		Default: "ja",
+		Langs: map[string][]string{
+			"ja": []string{"ja"},
+			"en": []string{"en", "en-*"},
+			"zh": []string{"zh"},
+		},
+		LocaleDir: "config/abort",
+	}
+
+	_, err := locale.CreateLocale()
+	if err == nil {
+		t.Fatal(err)
+	}
 }
