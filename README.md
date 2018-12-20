@@ -144,7 +144,7 @@ func main() {
 	// map[name:dirname/en:English]
 	fmt.Println(parse.Locale("dirname/en"))
 
-	// 言語をマージする
-	locale
+	// 言語をマージする。 ja + dirname/ja を結合したデータを取り扱う
+	fmt.Println(locale.Merge(parse.Locale("ja"), parse.Locale("dirname/ja")))
 }
 ```
