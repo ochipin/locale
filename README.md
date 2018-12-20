@@ -146,5 +146,19 @@ func main() {
 
 	// 言語をマージする。 ja + dirname/ja を結合したデータを取り扱う
 	fmt.Println(locale.Merge(parse.Locale("ja"), parse.Locale("dirname/ja")))
+
+	// Get関数を用いることで手軽にデータ取り出すことが可能。
+	data := parse.Locale("ja")
+	/*
+	{
+		"index": {
+			"app": {
+				"name": "appname!"
+			}
+		}
+	}
+	 */
+	// appname! を出力
+	fmt.Println(data.Get("index.app.name"))
 }
 ```

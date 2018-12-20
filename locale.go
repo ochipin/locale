@@ -13,7 +13,7 @@ import (
 // Parse :
 type Parse interface {
 	Lookup(string) string
-	Locale(string) map[string]interface{}
+	Locale(string) Data
 }
 
 // Locale : 言語環境管理構造体
@@ -23,7 +23,7 @@ type Locale struct {
 	Ext       map[string]string                      //
 	match     map[string][]*regexp.Regexp            //
 	LocaleDir string                                 // 言語ファイル置き場
-	locales   map[string]interface{}                 // 言語ファイル群
+	locales   Data                                   // 言語ファイル群
 	Walk      func(string, os.FileInfo, error) error // 言語設定ファイル解析関数ポインタ
 }
 
@@ -64,9 +64,9 @@ func (locale *Locale) Lookup(language string) string {
 }
 
 // Locale : 設定済みの言語設定情報を取得する
-func (locale *Locale) Locale(name string) map[string]interface{} {
+func (locale *Locale) Locale(name string) Data {
 	if v, ok := locale.locales[name]; ok {
-		if mapdata, ok := v.(map[string]interface{}); ok {
+		if mapdata, ok := v.(Data); ok {
 			return mapdata
 		}
 	}
@@ -79,7 +79,7 @@ func (locale *Locale) setLocale() error {
 		return nil
 	}
 	// 言語設定情報を格納するマップを初期化する
-	locale.locales = make(map[string]interface{})
+	locale.locales = make(Data)
 	if locale.Walk == nil {
 		locale.Walk = locale.DefaultWalk
 	}
@@ -112,7 +112,7 @@ func (locale *Locale) DefaultWalk(path string, f os.FileInfo, err error) error {
 	}
 
 	// 言語設定ファイルからデータを抽出する
-	var data = make(map[string]interface{})
+	var data = make(Data)
 	buf, _ := ioutil.ReadFile(path)
 	if len(buf) == 0 {
 		buf = []byte("{}")
@@ -158,9 +158,35 @@ func (locale *Locale) CreateLocale() (Parse, error) {
 	return locale, nil
 }
 
+// Data : 読み込んだ言語情報を取り扱う型
+type Data map[string]interface{}
+
+// Get : 指定されたキー名から値を取り出す
+func (data Data) Get(name string) (interface{}, error) {
+	var value interface{} = data
+
+	// ex) index.app.name => [index app name]へ分割し、順に処理
+	for _, n := range strings.Split(name, ".") {
+		if d, ok := value.(Data); ok {
+			// Data型へキャストできた場合は、指定されたキー名で値が存在するか検証を行う
+			if v1, ok := d[n]; ok {
+				value = v1
+			} else {
+				// データが存在しない場合、エラーとして扱う
+				return nil, fmt.Errorf("'%s' not found1", name)
+			}
+		} else {
+			// 指定された値キー名が存在しない場合、エラーとして扱う
+			return nil, fmt.Errorf("'%s' not found2", name)
+		}
+	}
+
+	return value, nil
+}
+
 // Merge : src に dst を追加した値を取得する
-func Merge(src, dst map[string]interface{}) map[string]interface{} {
-	var result = make(map[string]interface{})
+func Merge(src Data, dst Data) Data {
+	var result = make(Data)
 	if src != nil {
 		merge(result, src)
 	}
@@ -171,17 +197,20 @@ func Merge(src, dst map[string]interface{}) map[string]interface{} {
 	if src == nil && dst == nil {
 		return nil
 	}
+
 	// マージしたデータを返却する
 	return result
 }
 
 // src に dst をマージする
-func merge(src map[string]interface{}, dst map[string]interface{}, keys ...string) {
+func merge(src Data, dst Data, keys ...string) {
 	// マージするデータをループで全データ処理
 	for key, value := range dst {
 		keys = append(keys, key)
 		if v, ok := value.(map[string]interface{}); ok {
 			// map[app]などのデータがmapの場合、再帰する
+			merge(src, Data(v), keys...)
+		} else if v, ok = value.(Data); ok {
 			merge(src, v, keys...)
 		} else {
 			// mapの終端(map[app][key][name])へ辿り着いた時点で、データをマージ先と結合する
@@ -196,18 +225,18 @@ func merge(src map[string]interface{}, dst map[string]interface{}, keys ...strin
 }
 
 // mapにデータを追加/上書きする
-func set(src map[string]interface{}, dst interface{}, keys []string) {
+func set(src Data, dst interface{}, keys []string) {
 	last := keys[len(keys)-1] // [app key name] の最後尾にある name のみを格納
 	keys = keys[:len(keys)-1] // [app key]の2つの要素のみにする
 	// [app key]の値のみを検証
 	for _, key := range keys {
-		if v, ok := src[key].(map[string]interface{}); ok {
+		if v, ok := src[key].(Data); ok {
 			// src[key]がmapの場合、次の要素へ
 			src = v
 		} else {
 			// src[key]が存在しない場合、mapを生成して次の要素へ
-			src[key] = make(map[string]interface{})
-			src = src[key].(map[string]interface{})
+			src[key] = make(Data)
+			src = src[key].(Data)
 		}
 	}
 	src[last] = dst

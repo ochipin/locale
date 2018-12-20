@@ -180,24 +180,26 @@ func Test__NEW_CREATE_LOCALE_ERROR2(t *testing.T) {
 }
 
 func Test__MERGE_SUCCESS(t *testing.T) {
-	var srcdata = map[string]interface{}{
-		"info": map[string]interface{}{
+	var srcdata = Data{
+		"info": Data{
 			"name": "app-version",
 			"version": map[string]interface{}{
 				"major":       1,
 				"minor":       0,
 				"maintenance": 0,
 			},
+			"ok": false,
 		},
+		"ok": true,
 	}
 
-	var dstdata = map[string]interface{}{
-		"func": map[string]interface{}{
+	var dstdata = Data{
+		"func": Data{
 			"name": "test",
 			"args": "(int)",
 			"ret":  "int",
 		},
-		"info": map[string]interface{}{
+		"info": Data{
 			"name":    "app-version2",
 			"version": 100,
 		},
@@ -210,4 +212,13 @@ func Test__MERGE_SUCCESS(t *testing.T) {
 	if Merge(nil, nil) != nil {
 		t.Fatal("ERROR")
 	}
+
+	fmt.Println(result)
+	fmt.Println(result.Get("func2"))
+	fmt.Println(result.Get("func.name.undefined"))
+	fmt.Println(result.Get("func.name"))
+	fmt.Println(result.Get("info.name"))
+	fmt.Println(result.Get("info.version"))
+	fmt.Println(result.Get("info.ok"))
+	fmt.Println(result.Get("ok"))
 }
