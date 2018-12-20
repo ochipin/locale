@@ -13,7 +13,7 @@ import (
 // Parse :
 type Parse interface {
 	Lookup(string) string
-	Locale(string) interface{}
+	Locale(string) map[string]interface{}
 }
 
 // Locale : 言語環境管理構造体
@@ -64,9 +64,11 @@ func (locale *Locale) Lookup(language string) string {
 }
 
 // Locale : 設定済みの言語設定情報を取得する
-func (locale *Locale) Locale(name string) interface{} {
+func (locale *Locale) Locale(name string) map[string]interface{} {
 	if v, ok := locale.locales[name]; ok {
-		return v
+		if mapdata, ok := v.(map[string]interface{}); ok {
+			return mapdata
+		}
 	}
 	return nil
 }
@@ -154,4 +156,59 @@ func (locale *Locale) CreateLocale() (Parse, error) {
 	}
 
 	return locale, nil
+}
+
+// Merge : src に dst を追加した値を取得する
+func Merge(src, dst map[string]interface{}) map[string]interface{} {
+	var result = make(map[string]interface{})
+	if src != nil {
+		merge(result, src)
+	}
+	if dst != nil {
+		merge(result, dst)
+	}
+	// 引数に渡されたsrc,dst双方がnilの場合は、nilを返却する
+	if src == nil && dst == nil {
+		return nil
+	}
+	// マージしたデータを返却する
+	return result
+}
+
+// src に dst をマージする
+func merge(src map[string]interface{}, dst map[string]interface{}, keys ...string) {
+	// マージするデータをループで全データ処理
+	for key, value := range dst {
+		keys = append(keys, key)
+		if v, ok := value.(map[string]interface{}); ok {
+			// map[app]などのデータがmapの場合、再帰する
+			merge(src, v, keys...)
+		} else {
+			// mapの終端(map[app][key][name])へ辿り着いた時点で、データをマージ先と結合する
+			set(src, value, keys)
+		}
+		// map[app][key][name]処理後、map[app][key][????]など別データがある可能性もあるため、
+		// 参照先を map[app][key] までの値に戻す
+		if len(keys) > 0 {
+			keys = keys[:len(keys)-1]
+		}
+	}
+}
+
+// mapにデータを追加/上書きする
+func set(src map[string]interface{}, dst interface{}, keys []string) {
+	last := keys[len(keys)-1] // [app key name] の最後尾にある name のみを格納
+	keys = keys[:len(keys)-1] // [app key]の2つの要素のみにする
+	// [app key]の値のみを検証
+	for _, key := range keys {
+		if v, ok := src[key].(map[string]interface{}); ok {
+			// src[key]がmapの場合、次の要素へ
+			src = v
+		} else {
+			// src[key]が存在しない場合、mapを生成して次の要素へ
+			src[key] = make(map[string]interface{})
+			src = src[key].(map[string]interface{})
+		}
+	}
+	src[last] = dst
 }

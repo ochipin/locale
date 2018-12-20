@@ -178,3 +178,36 @@ func Test__NEW_CREATE_LOCALE_ERROR2(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func Test__MERGE_SUCCESS(t *testing.T) {
+	var srcdata = map[string]interface{}{
+		"info": map[string]interface{}{
+			"name": "app-version",
+			"version": map[string]interface{}{
+				"major":       1,
+				"minor":       0,
+				"maintenance": 0,
+			},
+		},
+	}
+
+	var dstdata = map[string]interface{}{
+		"func": map[string]interface{}{
+			"name": "test",
+			"args": "(int)",
+			"ret":  "int",
+		},
+		"info": map[string]interface{}{
+			"name":    "app-version2",
+			"version": 100,
+		},
+	}
+
+	result := Merge(srcdata, dstdata)
+	if result == nil {
+		t.Fatal("ERROR")
+	}
+	if Merge(nil, nil) != nil {
+		t.Fatal("ERROR")
+	}
+}

@@ -118,7 +118,7 @@ import (
 
 func main() {
 	// 判定する言語情報を設定
-	var locale = &locale.Locale{
+	var l = &locale.Locale{
 		Default: ".ja",
 		Langs: map[string][]string{
 			"ja": []string{"ja"},
@@ -130,7 +130,7 @@ func main() {
 		LocaleDir: "config/locales",
 	}
 
-	parse, err := locale.CreateLocale()
+	parse, err := l.CreateLocale()
 	if err != nil {
 		panic(err)
 	}
@@ -143,5 +143,8 @@ func main() {
 	fmt.Println(parse.Locale("en"))
 	// map[name:dirname/en:English]
 	fmt.Println(parse.Locale("dirname/en"))
+
+	// 言語をマージする
+	locale
 }
 ```
