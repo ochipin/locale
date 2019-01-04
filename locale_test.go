@@ -132,6 +132,10 @@ func Test__NEW_CREATE_LOCALE_CONF(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if parse.LangList("ja") == false {
+		t.Fatal("Error")
+	}
+
 	if parse.Locale("ja") == nil {
 		t.Fatal("Error")
 	}

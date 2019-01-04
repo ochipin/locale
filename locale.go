@@ -14,6 +14,7 @@ import (
 type Parse interface {
 	Lookup(string) string
 	Locale(string) Data
+	LangList(string) bool
 }
 
 // Locale : 言語環境管理構造体
@@ -71,6 +72,12 @@ func (locale *Locale) Locale(name string) Data {
 		}
 	}
 	return nil
+}
+
+// LangList : 指定した言語名が登録されているかチェックする
+func (locale *Locale) LangList(name string) bool {
+	_, ok := locale.Langs[name]
+	return ok
 }
 
 func (locale *Locale) setLocale() error {
