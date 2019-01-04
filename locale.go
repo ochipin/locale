@@ -158,11 +158,9 @@ func (locale *Locale) CreateLocale() (Parse, error) {
 		}
 	}
 	// 言語設定ファイルをデータとして保持する
-	if err := locale.setLocale(); err != nil {
-		return nil, err
-	}
+	err := locale.setLocale()
 
-	return locale, nil
+	return locale, err
 }
 
 // Data : 読み込んだ言語情報を取り扱う型
