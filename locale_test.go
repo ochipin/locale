@@ -225,4 +225,8 @@ func Test__MERGE_SUCCESS(t *testing.T) {
 	fmt.Println(result.Get("info.version"))
 	fmt.Println(result.Get("info.ok"))
 	fmt.Println(result.Get("ok"))
+	fmt.Println(result.HasItem("ok"))
+	fmt.Println(result.HasItem("func2"))
+	fmt.Println(result.T("ok"))
+	fmt.Println(result.T("func2"))
 }

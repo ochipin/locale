@@ -178,15 +178,32 @@ func (data Data) Get(name string) (interface{}, error) {
 				value = v1
 			} else {
 				// データが存在しない場合、エラーとして扱う
-				return nil, fmt.Errorf("'%s' not found1", name)
+				return nil, fmt.Errorf("'%s' not found", name)
 			}
 		} else {
 			// 指定された値キー名が存在しない場合、エラーとして扱う
-			return nil, fmt.Errorf("'%s' not found2", name)
+			return nil, fmt.Errorf("'%s' not found", name)
 		}
 	}
 
 	return value, nil
+}
+
+// HasItem : 指定されたキー名が存在するか確認する
+func (data Data) HasItem(name string) bool {
+	if _, err := data.Get(name); err != nil {
+		return false
+	}
+	return true
+}
+
+// T : 指定されたキー名から値を取り出す。存在しない場合、から文字列を返却する
+func (data Data) T(name string) interface{} {
+	v, err := data.Get(name)
+	if err != nil {
+		return ""
+	}
+	return v
 }
 
 // Merge : src に dst を追加した値を取得する
